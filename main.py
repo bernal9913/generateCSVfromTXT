@@ -1,5 +1,7 @@
 import os
 import csv
+import tkinter as tk
+from tkinter import ttk
 
 def process_files(folder_path):
     # Lista para almacenar los datos de todos los archivos
@@ -22,67 +24,93 @@ def process_file(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-    # Inicializar un diccionario para almacenar los datos del archivo
-    file_data = {
-        "Subject": "",
-        "Session": "",
-        "Responses on Lever 1": "",
-        "Response rate on Lever 1": "",
-        "Responses on Lever 2": "",
-        "Response rate on Lever 2": "",
-        "Reinforcers on Lever 1": "",
-        "Reinforcer rate on Lever 1": "",
-        "Reinforcers on Lever 2": "",
-        "Reinforcer rate on Lever 2": "",
-        "Total time in minutes": "",
-        "COM Port": "",
-        "Lever 1 Schedule": "",
-        "Lever 2 Schedule": ""
-    }
-
-    # Variable para rastrear si se ha encontrado la primera línea de datos
-    found_first_line = False
+    # Inicializar una lista para almacenar los datos del archivo
+    file_data = {}
 
     # Iterar sobre cada línea del archivo y extraer los datos relevantes
     for line in lines:
-        if found_first_line:
-            if line.strip() == "END":
-                break  # Terminar la lectura del archivo al encontrar "END"
-            elif line.strip() == "":
-                continue  # Saltar líneas vacías
+        # Limpiar la línea y extraer los datos relevantes
+        line = line.strip()
+        if "\n" in line:
+            line = line.replace("\n", "")
+        if '"' in line:
+            line = line.replace('"', "")
+
+        if line == "END":
+            break
+        elif line:
             if ":" in line:
                 key, value = line.split(":", 1)
-                file_data[key.strip().replace('"', '')] = value.strip().replace('"', '')
-        elif line.strip() == "END":
-            break
-        else:
-            found_first_line = True
+                file_data[key.strip()] = value.strip()
+            else:
+                # Si no hay un ":" en la línea, solo la agregamos a los datos del archivo
+                if 'Text' not in file_data:
+                    file_data['Text'] = line
+                else:
+                    file_data['Text'] += " " + line
 
     return file_data
 
-def write_to_csv(data, output_file):
-    # Definir los nombres de las columnas para el archivo CSV
-    fieldnames = ["Subject", "Session", "Responses on Lever 1", "Response rate on Lever 1",
-                  "Responses on Lever 2", "Response rate on Lever 2", "Reinforcers on Lever 1",
-                  "Reinforcer rate on Lever 1", "Reinforcers on Lever 2", "Reinforcer rate on Lever 2",
-                  "Total time in minutes", "COM Port", "Lever 1 Schedule", "Lever 2 Schedule"]
-
+def write_to_csv(headers, data, output_file):
     # Escribir los datos en el archivo CSV
     with open(output_file, mode='w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
         writer.writeheader()
-        for row in data:
-            writer.writerow(row)
+        writer.writerows(data)
+
+def generate_csv():
+    # Obtener los campos seleccionados por el usuario
+    selected_fields = [field.get() for field in field_comboboxes]
+
+    # Procesar los archivos y obtener los datos
+    data = process_files(folder_path)
+    headers = verify_data(data, selected_fields)
+
+    # Escribir los datos en un archivo CSV
+    output_file = "datos.csv"
+    write_to_csv(headers, data, output_file)
+
+    print("¡Conversión completa! Los datos se han guardado en", output_file)
+
+def verify_data(data, selected_fields):
+    # Verificar que los datos sean correctos
+    headers = []
+    for file_data in data:
+        for key in file_data.keys():
+            if key not in headers and key in selected_fields:
+                headers.append(key)
+    return headers
+
+# Crear la interfaz gráfica
+root = tk.Tk()
+root.title("Seleccionar Campos para CSV")
 
 # Obtener la ruta del directorio actual donde se encuentra el script
 script_dir = os.path.dirname(os.path.realpath(__file__))
 folder_path = script_dir  # Usar el directorio actual como la carpeta de archivos
 
-# Procesar los archivos y obtener los datos
+# Crear una lista de campos disponibles
 data = process_files(folder_path)
+all_fields = []
+for file_data in data:
+    for key in file_data.keys():
+        if key not in all_fields:
+            all_fields.append(key)
 
-# Escribir los datos en un archivo CSV
-output_file = "datos.csv"
-write_to_csv(data, output_file)
+# Crear etiquetas y cuadros combinados para cada campo
+field_comboboxes = []
+for i, field in enumerate(all_fields):
+    label = ttk.Label(root, text=field)
+    label.grid(row=i, column=0, padx=5, pady=5)
 
-print("¡Conversión completa! Los datos se han guardado en", output_file)
+    field_var = tk.StringVar(value="Si")  # Valor predeterminado seleccionado
+    combobox = ttk.Combobox(root, values=["Si", "No"], textvariable=field_var, state="readonly")
+    combobox.grid(row=i, column=1, padx=5, pady=5)
+
+    field_comboboxes.append(field_var)
+
+# Botón para generar el CSV
+generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv)
+generate_button.grid(row=len(all_fields), columnspan=2, padx=5, pady=10)
+
+root.mainloop()
