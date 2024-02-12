@@ -56,19 +56,30 @@ def write_to_csv(headers, data, output_file):
     with open(output_file, mode='w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=headers)
         writer.writeheader()
-        writer.writerows(data)
+        for file_data in data:
+            writer.writerow(file_data)
 
 def generate_csv():
     # Obtener los campos seleccionados por el usuario
-    selected_fields = [field.get() for field in field_comboboxes]
+    selected_fields = [field for i, field in enumerate(all_fields) if field_comboboxes[i].get() == "Si"]
 
     # Procesar los archivos y obtener los datos
     data = process_files(folder_path)
     headers = verify_data(data, selected_fields)
 
+    data2= []
+    for file_data in data:
+        new_file_data = {}
+        for key in file_data.keys():
+            if key in headers:
+                new_file_data[key] = file_data[key]
+            elif key not in headers and key in selected_fields:
+                new_file_data[key] = ""
+        data2.append(new_file_data)
+
     # Escribir los datos en un archivo CSV
     output_file = "datos.csv"
-    write_to_csv(headers, data, output_file)
+    write_to_csv(headers, data2, output_file)
 
     print("¡Conversión completa! Los datos se han guardado en", output_file)
 
@@ -81,6 +92,14 @@ def verify_data(data, selected_fields):
                 headers.append(key)
     return headers
 
+def change_all_fields(value):
+    if value == "Si":
+        for field_var in field_comboboxes:
+            field_var.set("Si")
+    elif value == "No":
+        for field_var in field_comboboxes:
+            field_var.set("No")
+
 # Crear la interfaz gráfica
 root = tk.Tk()
 root.title("Seleccionar Campos para CSV")
@@ -90,15 +109,16 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 folder_path = script_dir  # Usar el directorio actual como la carpeta de archivos
 
 # Crear una lista de campos disponibles
-data = process_files(folder_path)
+datos = process_files(folder_path)
 all_fields = []
-for file_data in data:
+for file_data in datos:
     for key in file_data.keys():
         if key not in all_fields:
             all_fields.append(key)
 
 # Crear etiquetas y cuadros combinados para cada campo
 field_comboboxes = []
+selected_fields = []
 for i, field in enumerate(all_fields):
     label = ttk.Label(root, text=field)
     label.grid(row=i, column=0, padx=5, pady=5)
@@ -109,8 +129,18 @@ for i, field in enumerate(all_fields):
 
     field_comboboxes.append(field_var)
 
+
 # Botón para generar el CSV
 generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv)
 generate_button.grid(row=len(all_fields), columnspan=2, padx=5, pady=10)
+
+# Boton para cambiar todos los campos a "Si"
+change_all_button = ttk.Button(root, text="Seleccionar Todos", command=lambda:change_all_fields("Si"))
+change_all_button.grid(row=len(all_fields)+1, columnspan=2, padx=5, pady=10)
+
+# Boton para cambiar todos los campos a "No"
+change_all_button2 = ttk.Button(root, text="Deseleccionar Todos", command=lambda:change_all_fields("No"))
+change_all_button2.grid(row=len(all_fields)+2, columnspan=2, padx=5, pady=10)
+
 
 root.mainloop()
