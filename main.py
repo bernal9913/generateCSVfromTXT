@@ -1,6 +1,7 @@
 import os
 import csv
 import tkinter as tk
+from datetime import datetime
 from tkinter import ttk
 from tkinter import filedialog
 
@@ -83,12 +84,14 @@ def generate_csv():
                 new_file_data[key] = ""
         data2.append(new_file_data)
 
+    # Generar el nombre de archivo con la fecha actual
+    current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_file = f"datos_{current_date}.csv"
+
     # Escribir los datos en un archivo CSV
-    output_file = "datos.csv"
     write_to_csv(headers, data2, output_file)
 
     print("¡Conversión completa! Los datos se han guardado en", output_file)
-
 
 def verify_data(data, selected_fields):
     # Verificar que los datos sean correctos
