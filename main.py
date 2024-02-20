@@ -67,6 +67,11 @@ def generate_csv():
     global folder_path
     folder_path = folder_path_entry.get()
 
+    if not folder_path:
+        # Si no se ha seleccionado una carpeta, mostrar una ventana de error
+        tk.messagebox.showerror("Error", "Por favor selecciona una carpeta.")
+        return
+
     # Obtener los campos seleccionados por el usuario
     selected_fields = [field for i, field in enumerate(all_fields) if field_comboboxes[i].get() == "Si"]
 
@@ -118,6 +123,25 @@ def browse_folder():
     folder_path_entry.delete(0, tk.END)
     folder_path_entry.insert(0, folder_selected)
 
+    if folder_selected:
+        datos = process_files(folder_selected)
+        all_fields = []
+        for file_data in datos:
+            for key in file_data.keys():
+                if key not in all_fields:
+                    all_fields.append(key)
+        # Crear etiquetas y cuadros combinados para cada campo
+        field_comboboxes = []
+        selected_fields = []
+        for i, field in enumerate(all_fields):
+            label = ttk.Label(root, text=field)
+            label.grid(row=i + 1, column=0, padx=5, pady=5)
+
+            field_var = tk.StringVar(value="Si")  # Valor predeterminado seleccionado
+            combobox = ttk.Combobox(root, values=["Si", "No"], textvariable=field_var, state="readonly")
+            combobox.grid(row=i + 1, column=1, padx=5, pady=5)
+
+            field_comboboxes.append(field_var)
 
 # Crear la interfaz gráfica
 root = tk.Tk()
@@ -164,5 +188,7 @@ change_all_button.grid(row=len(all_fields) + 3, columnspan=2, padx=5, pady=10)
 # Boton para cambiar todos los campos a "No"
 change_all_button2 = ttk.Button(root, text="Deseleccionar Todos", command=lambda: change_all_fields("No"))
 change_all_button2.grid(row=len(all_fields) + 4, columnspan=2, padx=5, pady=10)
+
+root.onexit = root.destroy
 
 root.mainloop()
