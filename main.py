@@ -5,6 +5,7 @@ from datetime import datetime
 from tkinter import ttk
 from tkinter import filedialog
 
+all_fields = []
 
 def process_files(folder_path):
     # Lista para almacenar los datos de todos los archivos
@@ -62,7 +63,6 @@ def write_to_csv(headers, data, output_file):
         for file_data in data:
             writer.writerow(file_data)
 
-
 def generate_csv():
     global folder_path
     folder_path = folder_path_entry.get()
@@ -91,7 +91,7 @@ def generate_csv():
 
     # Generar el nombre de archivo con la fecha actual
     current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_file = f"datos_{current_date}.csv"
+    output_file = os.path.join(folder_path, f"datos_{current_date}.csv")  # Construir ruta del archivo en la carpeta seleccionada
 
     # Escribir los datos en un archivo CSV
     write_to_csv(headers, data2, output_file)
@@ -107,7 +107,6 @@ def verify_data(data, selected_fields):
                 headers.append(key)
     return headers
 
-
 def change_all_fields(value):
     if value == "Si":
         for field_var in field_comboboxes:
@@ -116,7 +115,6 @@ def change_all_fields(value):
         for field_var in field_comboboxes:
             field_var.set("No")
 
-
 def browse_folder():
     global folder_path
     folder_selected = filedialog.askdirectory()
@@ -124,6 +122,7 @@ def browse_folder():
     folder_path_entry.insert(0, folder_selected)
 
     if folder_selected:
+        global all_fields
         datos = process_files(folder_selected)
         all_fields = []
         for file_data in datos:
@@ -131,8 +130,8 @@ def browse_folder():
                 if key not in all_fields:
                     all_fields.append(key)
         # Crear etiquetas y cuadros combinados para cada campo
+        global field_comboboxes
         field_comboboxes = []
-        selected_fields = []
         for i, field in enumerate(all_fields):
             label = ttk.Label(root, text=field)
             label.grid(row=i + 1, column=0, padx=5, pady=5)
@@ -145,16 +144,8 @@ def browse_folder():
 
 # Crear la interfaz gráfica
 root = tk.Tk()
+ttk.Style().configure('Gray.TButton', foreground='black', background='gray')
 root.title("Seleccionar Campos para CSV")
-
-# Obtener la ruta del directorio actual donde se encuentra el script
-folder_path = "."  # Puedes usar el directorio actual como predeterminado
-datos = process_files(folder_path)
-all_fields = []
-for file_data in datos:
-    for key in file_data.keys():
-        if key not in all_fields:
-            all_fields.append(key)
 
 # Botón para seleccionar la carpeta
 browse_button = ttk.Button(root, text="Seleccionar Carpeta", command=browse_folder)
@@ -164,30 +155,9 @@ browse_button.grid(row=0, column=0, padx=5, pady=5)
 folder_path_entry = ttk.Entry(root)
 folder_path_entry.grid(row=0, column=1, padx=5, pady=5)
 
-# Crear etiquetas y cuadros combinados para cada campo
-field_comboboxes = []
-selected_fields = []
-for i, field in enumerate(all_fields):
-    label = ttk.Label(root, text=field)
-    label.grid(row=i + 1, column=0, padx=5, pady=5)
-
-    field_var = tk.StringVar(value="Si")  # Valor predeterminado seleccionado
-    combobox = ttk.Combobox(root, values=["Si", "No"], textvariable=field_var, state="readonly")
-    combobox.grid(row=i + 1, column=1, padx=5, pady=5)
-
-    field_comboboxes.append(field_var)
-
-# Botón para generar el CSV
-generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv)
-generate_button.grid(row=len(all_fields) + 2, columnspan=2, padx=5, pady=10)
-
-# Boton para cambiar todos los campos a "Si"
-change_all_button = ttk.Button(root, text="Seleccionar Todos", command=lambda: change_all_fields("Si"))
-change_all_button.grid(row=len(all_fields) + 3, columnspan=2, padx=5, pady=10)
-
-# Boton para cambiar todos los campos a "No"
-change_all_button2 = ttk.Button(root, text="Deseleccionar Todos", command=lambda: change_all_fields("No"))
-change_all_button2.grid(row=len(all_fields) + 4, columnspan=2, padx=5, pady=10)
+# Botón para generar el CSV, color gris de fondo
+generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv, style="Gray.TButton")
+generate_button.grid(row=0, column=2, padx=5, pady=5)
 
 root.onexit = root.destroy
 
