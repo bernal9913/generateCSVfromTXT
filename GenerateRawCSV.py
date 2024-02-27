@@ -27,10 +27,12 @@ def process_file(file_path):
         lines = file.readlines()
 
     # Inicializar una lista para almacenar los datos del archivo
-    file_data = {}
+    file_data = []
 
     # Iterar sobre cada línea del archivo y extraer los datos relevantes
+    component = ""
     for line in lines:
+        temp_data = {"File":file.name.split("\\")[-1],"Component":""}
         # Limpiar la línea y extraer los datos relevantes
         line = line.strip()
         if "\n" in line:
@@ -45,7 +47,14 @@ def process_file(file_path):
         elif line:
             if "," in line:
                 value, key = line.split(",", 1)
-                file_data[key] = value
+                if "StartComponent" in key:
+                    component = key
+                elif "EndComponent" in key:
+                    component = ""
+                elif key not in temp_data:
+                    temp_data[key] = value
+                temp_data["Component"] = component
+                file_data.append(temp_data)
 
     return file_data
 
@@ -70,11 +79,9 @@ def generate_csv():
     data = process_files(folder_path)
 
     data2 = []
-    for file_data in data:
-        new_file_data = {}
-        for key in file_data.keys():
-            new_file_data[key] = file_data[key]
-        data2.append(new_file_data)
+    for lista in data:
+        for file_data in lista:
+            data2.append(file_data)
 
     # Generar el nombre de archivo con la fecha actual
     current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -82,12 +89,20 @@ def generate_csv():
     # Construir ruta del archivo en la carpeta seleccionada
     output_file = os.path.join(folder_path, f"datos_{current_date}.csv")  
 
-    headers = data2[0].keys()
+    headers = get_headers(data2)
 
     # Escribir los datos en un archivo CSV
     write_to_csv(headers, data2, output_file)
 
     print("¡Conversión completa! Los datos se han guardado en", output_file)
+
+def get_headers(data):
+    headers = []
+    for file_data in data:
+        for key in file_data.keys():
+            if key not in headers:
+                headers.append(key)
+    return list(headers)
 
 def browse_folder():
     global folder_path
