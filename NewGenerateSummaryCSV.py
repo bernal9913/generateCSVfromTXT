@@ -5,11 +5,13 @@ from datetime import datetime
 from tkinter import ttk
 from tkinter import filedialog
 
-all_fields = []
-format_type = "Tipo Normal"
-headers_list = []
-
 def process_files(folder_path):
+    global format_type
+    format_type = "Tipo Normal"
+    global max_lines
+    max_lines = 0
+    global headers_list
+    headers_list = []
     # Lista para almacenar los datos de todos los archivos
     data = []
 
@@ -31,26 +33,9 @@ def process_files(folder_path):
     return data
 
 def verify_format_type(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-
-    for line in lines:
-        if ":" in line:
-            key, value = line.split(":", 1)
-            if value == "":
-                format_type = "Tipo Seccionado"
-                break
-
-def process_file(file_path):
     global format_type
-    print("Procesando archivo:", file_path)
-    # Leer el contenido del archivo
     with open(file_path, 'r') as file:
         lines = file.readlines()
-
-
-    # Inicializar una lista para almacenar los datos del archivo
-    file_data = {}
 
     for line in lines:
         line = line.strip()
@@ -62,6 +47,19 @@ def process_file(file_path):
             key, value = line.split(":", 1)
             if value == "":
                 format_type = "Tipo Seccionado"
+                break
+
+def process_file(file_path):
+    global format_type
+    global max_lines
+    global headers_list
+    print("Procesando archivo:", file_path)
+    # Leer el contenido del archivo
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    # Inicializar una lista para almacenar los datos del archivo
+    file_data = {}
 
     print("Formato del archivo:", format_type)
     if format_type == "Tipo Normal":
@@ -125,6 +123,10 @@ def process_file(file_path):
                     else:
                         file_data['Text'] += " " + line
 
+    if len(file_data) > max_lines:
+        max_lines = len(file_data)
+        headers_list = file_data.keys()
+
     return file_data
 
 def write_to_csv(headers, data, output_file):
@@ -136,6 +138,7 @@ def write_to_csv(headers, data, output_file):
             writer.writerow(file_data)
 
 def generate_csv():
+    global headers_list
     global folder_path
     folder_path = folder_path_entry.get()
 
@@ -145,11 +148,11 @@ def generate_csv():
         return
 
     # Obtener los campos seleccionados por el usuario
-    selected_fields = [field for i, field in enumerate(all_fields) if field_comboboxes[i].get() == "Si"]
+    selected_fields = [field for i, field in enumerate(headers_list) if field_comboboxes[i].get() == "Si"]
 
     # Procesar los archivos y obtener los datos
     data = process_files(folder_path)
-    headers = verify_data(data, selected_fields)
+    headers = headers_list
 
     data2 = []
     for file_data in data:
@@ -194,23 +197,23 @@ def browse_folder():
     folder_path_entry.insert(0, folder_selected)
 
     if folder_selected:
-        global all_fields
         datos = process_files(folder_selected)
-        all_fields = []
-        for file_data in datos:
-            for key in file_data.keys():
-                if key not in all_fields:
-                    all_fields.append(key)
+
+        # Limpiar el marco de campos antes de agregar nuevos elementos
+        for widget in fields_frame.winfo_children():
+            widget.destroy()
+
         # Crear etiquetas y cuadros combinados para cada campo
         global field_comboboxes
         field_comboboxes = []
-        for i, field in enumerate(all_fields):
-            label = ttk.Label(root, text=field)
-            label.grid(row=i + 1, column=0, padx=5, pady=5)
+        global headers_list
+        for i, field in enumerate(headers_list):
+            label = ttk.Label(fields_frame, text=field)
+            label.grid(row=i, column=0, padx=5, pady=5, sticky="w")
 
             field_var = tk.StringVar(value="Si")  # Valor predeterminado seleccionado
-            combobox = ttk.Combobox(root, values=["Si", "No"], textvariable=field_var, state="readonly")
-            combobox.grid(row=i + 1, column=1, padx=5, pady=5)
+            combobox = ttk.Combobox(fields_frame, values=["Si", "No"], textvariable=field_var, state="readonly")
+            combobox.grid(row=i, column=1, padx=5, pady=5, sticky="w")
 
             field_comboboxes.append(field_var)
 
@@ -231,6 +234,29 @@ folder_path_entry.grid(row=0, column=1, padx=5, pady=5)
 generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv, style="Gray.TButton")
 generate_button.grid(row=0, column=2, padx=5, pady=5)
 
-root.onexit = root.destroy
+# Crear un marco para el panel de desplazamiento
+scrollable_frame = ttk.Frame(root)
+scrollable_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
+
+# Configurar el panel de desplazamiento
+scrollbar = ttk.Scrollbar(scrollable_frame, orient="vertical")
+scrollbar.grid(row=0, column=2, sticky="ns")
+
+# Configurar el lienzo dentro del panel de desplazamiento
+canvas = tk.Canvas(scrollable_frame, yscrollcommand=scrollbar.set)
+canvas.grid(row=0, column=0, sticky="nsew")
+
+# Asociar el lienzo al panel de desplazamiento
+scrollbar.config(command=canvas.yview)
+
+# Crear un nuevo marco para contener los campos
+fields_frame = ttk.Frame(canvas)
+canvas.create_window((0, 0), window=fields_frame, anchor="nw")
+
+# Configurar el panel de desplazamiento para expandirse con el tamaño del contenido
+fields_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+# Permitir el desplazamiento con la rueda del ratón
+canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
 root.mainloop()
