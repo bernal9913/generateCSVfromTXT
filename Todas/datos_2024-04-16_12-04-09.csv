@@ -1,8 +1,0 @@
-Text,Subject,Session,COM Port,Lever 1 Schedule,Lever 2 Schedule,Responses,Lever 1 Component 1,Lever 2 Component 1,Lever 1 Component 2,Lever 2 Component 2,Lever 1 Component 3,Lever 2 Component 3,Lever 1 Component 4,Lever 2 Component 4,Response rates,Reinforcers,Reinforcer rates,Total time in minutes
-18-03-2024_03-42-57 18-03-2024_04-05-38,R11,C01_s01,COM3,Variable Interval 30,Variable Interval 60,,1.8,0,0,0,0,0,NaN,NaN,,,,20.6666666666667
-11-03-2024_06-07-00 11-03-2024_07-13-41,R11,C03_S01.3,COM3,Variable Interval 30,Fixed Interval 60,,1.6,0,0,1.1,0,0.9,NaN,NaN,,,,61.6666666666667
-21-03-2024_04-25-21 21-03-2024_05-29-01,R11,C03_s02,COM3,Variable Interval 30,Fixed Interval 60,,1.75,0,0,1,0,0.95,NaN,NaN,,,,61.6666666666667
-12-03-2024_04-31-20 12-03-2024_05-35-00,R11,C04_s01,COM3,Variable Interval 30,Variable Interval 60,,1.6,0,0,0.8,0,0,NaN,NaN,,,,61.6666666666667
-22-03-2024_03-07-16 22-03-2024_04-10-57,R11,C04_S02,COM3,Variable Interval 30,Variable Interval 60,,1.8,0,0,0.9,0,0,NaN,NaN,,,,61.6666666666667
-14-03-2024_04-24-04 14-03-2024_05-27-45,R11,C05_s01,COM3,Variable Interval 30,Fixed Interval 120,,1.75,0,0,0.7,0,0.45,NaN,NaN,,,,61.6666666666667
-15-03-2024_04-47-33 15-03-2024_05-51-14,R11,C06_s01,COM3,Variable Interval 30,Fixed Interval 180,,1.7,0,0,0.8,0,0.3,NaN,NaN,,,,61.6666666666667
