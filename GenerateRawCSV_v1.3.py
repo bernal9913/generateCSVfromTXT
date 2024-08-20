@@ -6,25 +6,25 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 
-def process_files(folder_path):
+def process_files(folder_path, selected_files=None):
     global max_lines
     max_lines = 0
     global headers_list
     headers_list = []
     global aux_keys
     aux_keys = []
-    # Lista para almacenar los datos de todos los archivos
     data = []
 
-    # Iterar sobre todos los archivos en la carpeta
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".txt"):
-            file_path = os.path.join(folder_path, filename)
-            # Procesar cada archivo
-            file_data = process_file(file_path)
-            if file_data:
-                data.append(file_data)
-    
+    # Si no se seleccionaron archivos específicos, procesar todos los archivos de la carpeta
+    if not selected_files:
+        selected_files = [f for f in os.listdir(folder_path) if f.endswith(".txt")]
+
+    for filename in selected_files:
+        file_path = os.path.join(folder_path, filename)
+        file_data = process_file(file_path)
+        if file_data:
+            data.append(file_data)
+
     aux_keys.remove("File")
     aux_keys.remove("Component")
     aux_keys.sort()
@@ -38,17 +38,14 @@ def process_file(file_path):
     global headers_list
     global aux_keys
     print("Procesando archivo:", file_path)
-    # Leer el contenido del archivo
+
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-    # Inicializar una lista para almacenar los datos del archivo
     file_data = []
     temp_data = {"File": file.name.split("\\")[-1]}
-    # Iterar sobre cada línea del archivo y extraer los datos relevantes
     component = ""
     for line in lines:
-        # Limpiar la línea y extraer los datos relevantes
         line = line.strip()
         if "\n" in line:
             line = line.replace("\n", "")
@@ -66,7 +63,6 @@ def process_file(file_path):
             elif "," in line:
                 continue
             else:
-                # Si no hay un ":" o "," en la línea, solo la agregamos a los datos del archivo
                 if 'Text' not in file_data:
                     temp_data['Text'] = line
                 else:
@@ -79,7 +75,6 @@ def process_file(file_path):
 
     for line in lines:
         temp_data = {"File": file.name.split("\\")[-1], "Component": ""}
-        # Limpiar la línea y extraer los datos relevantes
         line = line.strip()
         if "\n" in line:
             line = line.replace("\n", "")
@@ -109,7 +104,6 @@ def process_file(file_path):
     return file_data
 
 def write_to_csv(headers, data, output_file, mode='w'):
-    # Escribir los datos en el archivo CSV
     with open(output_file, mode=mode, newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=headers)
         if mode == 'w':
@@ -123,39 +117,40 @@ def generate_csv():
     folder_path = folder_path_entry.get()
 
     if not folder_path:
-        # Si no se ha seleccionado una carpeta, mostrar una ventana de error
         tk.messagebox.showerror("Error", "Por favor selecciona una carpeta.")
         return
-    
-    # Procesar los archivos y obtener los datos
-    data = process_files(folder_path)
+
+    # Preguntar si procesar todos los archivos o elegir específicos
+    process_all = messagebox.askyesno("Seleccionar Archivos", "¿Quieres procesar todos los archivos de la carpeta?")
+
+    selected_files = None
+    if not process_all:
+        selected_files = filedialog.askopenfilenames(initialdir=folder_path, filetypes=[("Text files", "*.txt")])
+        selected_files = [os.path.basename(file) for file in selected_files]
+
+    data = process_files(folder_path, selected_files)
 
     data2 = []
     for lista in data:
         for file_data in lista:
             data2.append(file_data)
 
-    # Preguntar al usuario si es una exportación inicial o una actualización
     export_type = messagebox.askquestion("Tipo de Exportación", "¿Es una exportación inicial (Sí) o una actualización (No)?")
 
     if export_type == 'yes':
-        mode = 'w'  # Modo escritura (sobrescribe)
+        mode = 'w'
     else:
-        mode = 'a'  # Modo agregar (append)
-        # Seleccionar archivo CSV para actualizar
+        mode = 'a'
         output_file = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not output_file:
             tk.messagebox.showerror("Error", "No se seleccionó ningún archivo CSV para actualizar.")
             return
 
     if mode == 'w':
-        # Generar el nombre de archivo con la fecha actual
         current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_file = os.path.join(folder_path, f"datos_{current_date}.csv")  # Construir ruta del archivo en la carpeta seleccionada
+        output_file = os.path.join(folder_path, f"datos_{current_date}.csv")
 
     headers = headers_list
-
-    # Escribir los datos en un archivo CSV
     write_to_csv(headers, data2, output_file, mode)
 
     print("¡Conversión completa! Los datos se han guardado en", output_file)
@@ -166,26 +161,21 @@ def browse_folder():
     folder_path_entry.delete(0, tk.END)
     folder_path_entry.insert(0, folder_selected)
 
-# Crear la interfaz gráfica
 root = tk.Tk()
 ttk.Style().configure('Gray.TButton', foreground='black', background='gray')
 root.title("Seleccionar Campos para CSV")
 
-# Configurar el grid para que se expanda
 root.grid_columnconfigure(0, weight=1)
-root.grid_columnconfigure(1, weight=3)  # La entrada de texto tendrá más espacio
+root.grid_columnconfigure(1, weight=3)
 root.grid_columnconfigure(2, weight=1)
 root.grid_rowconfigure(0, weight=1)
 
-# Botón para seleccionar la carpeta
 browse_button = ttk.Button(root, text="Seleccionar Carpeta", command=browse_folder)
 browse_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
-# Entrada de texto para la ruta de la carpeta
 folder_path_entry = ttk.Entry(root)
 folder_path_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-# Botón para generar el CSV, color gris de fondo
 generate_button = ttk.Button(root, text="Generar CSV", command=generate_csv, style="Gray.TButton")
 generate_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 

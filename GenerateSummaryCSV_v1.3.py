@@ -6,7 +6,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 
-def process_files(folder_path):
+def process_files(folder_path, selected_files=None):
     global format_type
     format_type = "Tipo Normal"
     global max_lines
@@ -16,20 +16,21 @@ def process_files(folder_path):
     # Lista para almacenar los datos de todos los archivos
     data = []
 
-    # Iterar sobre todos los archivos en la carpeta
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".txt"):
-            file_path = os.path.join(folder_path, filename)
-            verify_format_type(file_path)
-            break
+    # Filtrar archivos según selección
+    files_to_process = selected_files if selected_files else [f for f in os.listdir(folder_path) if f.endswith(".txt")]
 
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".txt"):
-            file_path = os.path.join(folder_path, filename)
-            # Procesar cada archivo
-            file_data = process_file(file_path)
-            if file_data:
-                data.append(file_data)
+    # Verificar el tipo de formato con el primer archivo
+    if files_to_process:
+        file_path = os.path.join(folder_path, files_to_process[0])
+        verify_format_type(file_path)
+
+    # Procesar cada archivo seleccionado
+    for filename in files_to_process:
+        file_path = os.path.join(folder_path, filename)
+        # Procesar cada archivo
+        file_data = process_file(file_path)
+        if file_data:
+            data.append(file_data)
 
     return data
 
@@ -149,11 +150,19 @@ def generate_csv():
         tk.messagebox.showerror("Error", "Por favor selecciona una carpeta.")
         return
 
+    # Preguntar si se desean procesar todos los archivos o seleccionar archivos específicos
+    process_all = messagebox.askyesno("Procesar Archivos", "¿Deseas procesar todos los archivos en la carpeta?")
+
+    selected_files = []
+    if not process_all:
+        selected_files = filedialog.askopenfilenames(initialdir=folder_path, title="Selecciona Archivos", filetypes=[("Text files", "*.txt")])
+        selected_files = [os.path.basename(f) for f in selected_files]  # Obtener solo los nombres de archivo
+
     # Obtener los campos seleccionados por el usuario
     selected_fields = [field for i, field in enumerate(headers_list) if field_comboboxes[i].get() == "Si"]
 
     # Procesar los archivos y obtener los datos
-    data = process_files(folder_path)
+    data = process_files(folder_path, selected_files)
     headers = headers_list
 
     data2 = []
